@@ -16,6 +16,10 @@ K3s doesn't currently support cgroup v2 ([related discussion](https://github.com
 4. `$ sudo update-grub`
 5. Reboot your machine
 
+# Dependencies:
+Install with  
+`$ sudo pacman -S base-devel go clang bpf libbpf`
+
 # Usage
 `$ cd ebpf_loader && go build -o podmgr . && ./podmgr`
 
