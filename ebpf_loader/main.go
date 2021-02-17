@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/homedir"
 	"os"
@@ -47,6 +50,31 @@ func main() {
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
+	}
+
+	// Get services
+	services, err := clientSet.CoreV1().Services("").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for _, e := range services.Items {
+		_, ok := e.Annotations["bandwidth"]
+		if !ok {
+			continue
+		}
+		fmt.Println(e.Name)
+
+		set := labels.SelectorFromSet(e.Spec.Selector)
+
+		pods, err := clientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{LabelSelector: set.String()})
+		if err != nil {
+			fmt.Println("stuff gone bad")
+		}
+
+		for _, f := range pods.Items {
+			fmt.Println("pod: " + f.Name)
+		}
 	}
 
 	// Set up an event watcher
