@@ -3,8 +3,7 @@ package main
 import (
 	"fmt"
 	"k8s.io/api/core/v1"
-	"tiedpenguin.com/gotest/bandwidthmanager"
-	"tiedpenguin.com/gotest/lossmanager"
+	"tiedpenguin.com/gotest/manager"
 	"tiedpenguin.com/gotest/util"
 )
 
@@ -33,13 +32,13 @@ func (pm *PodManager) AddPod(pod *v1.Pod) error {
 	pm.podList = append(pm.podList, pod)
 
 	if bandwidth, ok := pod.Annotations["bandwidth"]; ok {
-		if err := bandwidthmanager.AddLimit(pod, bandwidth); err != nil {
+		if err := manager.AddLimit(pod, bandwidth); err != nil {
 			return err
 		}
 	}
 
 	if loss, ok := pod.Annotations["loss"]; ok {
-		if err := lossmanager.Add(pod, loss); err != nil {
+		if err := manager.Add(pod, loss); err != nil {
 			return err
 		}
 	}
@@ -71,13 +70,13 @@ func (pm *PodManager) RemovePod(pod *v1.Pod) error {
 	pm.podList = append(pm.podList[:index], pm.podList[index+1:]...)
 
 	if bandwidth, ok := pod.Annotations["bandwidth"]; ok {
-		if err := bandwidthmanager.RemoveLimit(pod, bandwidth); err != nil {
+		if err := manager.RemoveLimit(pod, bandwidth); err != nil {
 			return err
 		}
 	}
 
 	if loss, ok := pod.Annotations["loss"]; ok {
-		if err := lossmanager.Remove(pod, loss); err != nil {
+		if err := manager.Remove(pod, loss); err != nil {
 			return err
 		}
 	}

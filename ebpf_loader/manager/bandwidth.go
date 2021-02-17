@@ -1,4 +1,4 @@
-package bandwidthmanager
+package manager
 
 import (
 	"errors"
