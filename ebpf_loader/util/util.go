@@ -1,7 +1,9 @@
 package util
 
 import (
+	"fmt"
 	v1 "k8s.io/api/core/v1"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -31,4 +33,9 @@ func GetCgroup(container v1.ContainerStatus) (string, error) {
 	}
 
 	return strings.Trim(string(cgroup), "\n"), nil
+}
+
+func Die(reason error) {
+	fmt.Println(reason)
+	os.Exit(-1)
 }

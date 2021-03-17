@@ -18,7 +18,7 @@ spec:
       labels:
         app: thesis-app
       annotations:
-        bandwidth: "10mbps"
+        bandwidth: "10 mbps egress"
         loss: "2%"
     spec:
       containers:
@@ -34,7 +34,7 @@ metadata:
   name: go-test-service
   namespace: thesis-ns
   annotations:
-    bandwidth: "100mbps"
+    bandwidth: "100 mbps egress"
 spec:
   ports:
   - port: 80
