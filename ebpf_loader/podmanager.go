@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golang.org/x/xerrors"
+	"io/ioutil"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -11,8 +12,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"os"
+	"os/exec"
 	"os/signal"
+	"strconv"
 	"strings"
+	"tiedpenguin.com/gotest/loader"
 	"tiedpenguin.com/gotest/util"
 	"time"
 )
@@ -24,8 +28,9 @@ const (
 
 // The limits are stored outside the pod annotations because service-level limits only appear in service annotations
 type podEntry struct {
-	pod    v1.Pod
-	limits map[string]string
+	pod      v1.Pod
+	limits   map[string]string
+	programs map[string]string
 }
 
 type PodManager struct {
@@ -66,8 +71,9 @@ func (pm *PodManager) Run(clientSet *kubernetes.Clientset) error {
 			}
 
 			err = pm.addPod(&podEntry{
-				pod:    f,
-				limits: tempLimits,
+				pod:      f,
+				limits:   tempLimits,
+				programs: make(map[string]string),
 			}, false)
 			if err != nil {
 				return err
@@ -100,8 +106,9 @@ func (pm *PodManager) Run(clientSet *kubernetes.Clientset) error {
 		}
 
 		err = pm.addPod(&podEntry{
-			pod:    e,
-			limits: tempLimits,
+			pod:      e,
+			limits:   tempLimits,
+			programs: make(map[string]string),
 		}, true)
 		if err != nil {
 			return err
@@ -139,8 +146,9 @@ func (pm *PodManager) Run(clientSet *kubernetes.Clientset) error {
 				}
 
 				err = pm.addPod(&podEntry{
-					pod:    *pod,
-					limits: tempLimits,
+					pod:      *pod,
+					limits:   tempLimits,
+					programs: make(map[string]string),
 				}, false)
 				if err != nil {
 					util.Die(err)
@@ -155,7 +163,7 @@ func (pm *PodManager) Run(clientSet *kubernetes.Clientset) error {
 					return
 				}
 
-				if err := pm.removePod(pod); err != nil {
+				if err := pm.removePod(*pod); err != nil {
 					fmt.Println(err)
 				}
 			},
@@ -199,7 +207,7 @@ func (pm *PodManager) addPod(entry *podEntry, override bool) error {
 
 	if override {
 		// Override; remove already existing pod
-		if err := pm.removePod(&entry.pod); err != nil {
+		if err := pm.removePod(entry.pod); err != nil {
 			return err
 		}
 	} else {
@@ -211,9 +219,6 @@ func (pm *PodManager) addPod(entry *podEntry, override bool) error {
 		}
 	}
 
-	fmt.Println("\nAdded pod: " + entry.pod.Namespace + "/" + entry.pod.Name)
-	pm.podList = append(pm.podList, *entry)
-
 	if bandwidthAnnotation, hasBandwidth := entry.limits[Bandwidth]; hasBandwidth {
 		paramList := strings.Split(bandwidthAnnotation, " ")
 
@@ -221,43 +226,91 @@ func (pm *PodManager) addPod(entry *podEntry, override bool) error {
 			return xerrors.New("Invalid bandwidth parameters.")
 		}
 
+		if paramList[2] != "ingress" && paramList[2] != "egress" {
+			return xerrors.New("Invalid interface. Use ingress or egress")
+		}
+
 		params := "-DBANDWIDTH=" + paramList[0]
 
 		switch paramList[1] {
+		case "bps":
+			// No additional zeros
 		case "kbps":
 			params += "000"
 		case "mbps":
 			params += "000000"
 		}
 
-		params += " -DINTERFACE=" + paramList[2]
-
-		err := Load(&entry.pod, Bandwidth, params)
+		err := loader.Load(&entry.pod, "edt", paramList[2], params)
 		if err != nil {
 			return err
 		}
+
+		entry.programs["edt"] = paramList[2]
 	}
 
 	if lossAnnotation, hasLoss := entry.limits[Loss]; hasLoss {
-		// Compile program for it, etc
-		fmt.Println(lossAnnotation)
+		paramList := strings.Split(lossAnnotation, " ")
+
+		if len(paramList) < 3 {
+			return xerrors.New("Invalid bandwidth parameters.")
+		}
+
+		if paramList[1] != "ingress" && paramList[1] != "egress" {
+			return xerrors.New("Invalid interface. Use ingress or egress")
+		}
+
+		var params string
+
+		switch paramList[0] {
+		case "uniform":
+			params = "-DDISTRIBUTION=0"
+
+			if !strings.HasSuffix(paramList[2], "%") {
+				return xerrors.New("Invalid loss percentage.")
+			}
+
+			percentage := strings.TrimSuffix(paramList[2], "%")
+
+			if value, err := strconv.Atoi(percentage); err != nil || value < 0 || value > 100 {
+				return xerrors.New("Invalid loss percentage.")
+			}
+
+			params += " -DPERCENTAGE=" + percentage
+		case "exponential":
+			params = "-DDISTRIBUTION=1"
+		default:
+			return xerrors.New("Invalid distribution. Use uniform or exponential")
+		}
+
+		err := loader.Load(&entry.pod, Loss, paramList[1], params)
+		if err != nil {
+			return err
+		}
+
+		entry.programs[Loss] = paramList[1]
 	}
+
+	fmt.Println("\nAdded pod: " + entry.pod.Namespace + "/" + entry.pod.Name)
+	pm.podList = append(pm.podList, *entry)
 
 	return nil
 }
 
-func (pm *PodManager) removePod(pod *v1.Pod) error {
+func (pm *PodManager) removePod(pod v1.Pod) error {
 	if util.IsKubernetesNamespace(pod.Namespace) {
 		return nil
 	}
 
 	isPresentInList := false
 	index := 0
+	entry := podEntry{}
 
 	for i, e := range pm.podList {
 		if e.pod.UID == pod.UID {
 			isPresentInList = true
 			index = i
+			entry = e
 			break
 		}
 	}
@@ -267,6 +320,9 @@ func (pm *PodManager) removePod(pod *v1.Pod) error {
 	}
 
 	fmt.Println("\nDeleted pod: " + pod.Namespace + "/" + pod.Name)
+	for k, v := range entry.programs {
+		loader.Unload(&entry.pod, k, v)
+	}
 	pm.podList = append(pm.podList[:index], pm.podList[index+1:]...)
 
 	return nil
@@ -274,12 +330,21 @@ func (pm *PodManager) removePod(pod *v1.Pod) error {
 
 func (pm *PodManager) cleanup() {
 	// Create a temporary list
-	var tempList []*v1.Pod
+	var tempList []v1.Pod
 	for _, e := range pm.podList {
-		tempList = append(tempList, &e.pod)
+		tempList = append(tempList, e.pod)
 	}
 
 	for _, e := range tempList {
 		_ = pm.removePod(e)
 	}
+
+	// Remove files from the build directory
+	files, _ := ioutil.ReadDir("build/")
+	for _, e := range files {
+		if !e.IsDir() {
+			_ = exec.Command("/bin/bash", "-c", fmt.Sprintf(loader.DeleteCommand, strings.TrimSuffix(e.Name(), ".o"))).Run()
+		}
+	}
+
 }

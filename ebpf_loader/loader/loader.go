@@ -1,4 +1,4 @@
-package main
+package loader
 
 import (
 	"errors"
@@ -13,14 +13,16 @@ const (
 	CompileCommand = "clang -target bpf -c -O2 bpf/%s.c -o build/%s.o %s -I/usr/include/x86_64-linux-gnu"
 	DeleteCommand  = "rm build/%s.o"
 	LoadCommand    = "sudo bpftool prog loadall build/%[1]s.o /sys/fs/bpf/%[1]s type cgroup/skb"
-	UnloadCommand  = "sudo rm /sys/fs/bpf/%s/cgroup_skb_egress"
+	UnloadCommand  = "sudo rm /sys/fs/bpf/%s/cgroup_skb_%s"
+	AttachCommand  = "sudo bpftool cgroup attach %s/ %s pinned /sys/fs/bpf/%s/cgroup_skb_%[2]s"
+	DetachCommand  = "sudo bpftool cgroup detach %s/ %s pinned /sys/fs/bpf/%s/cgroup_skb_%[2]s"
 )
 
-func Load(pod *v1.Pod, programName, params string) error {
+func Load(pod *v1.Pod, programName, ioInterface, params string) error {
 	fileName := programName + "_" + string(pod.UID)
 
 	// Unload remnant if any
-	unloadOutput, err := exec.Command("/bin/bash", "-c", UnloadCommand).CombinedOutput()
+	unloadOutput, err := exec.Command("/bin/bash", "-c", fmt.Sprintf(UnloadCommand, fileName, ioInterface)).CombinedOutput()
 	if err != nil && !strings.Contains(string(unloadOutput), "No such file or directory") {
 		return err
 	}
@@ -32,10 +34,8 @@ func Load(pod *v1.Pod, programName, params string) error {
 	}
 
 	// Compile ebpf program
-	fmt.Println(fmt.Sprintf(CompileCommand, programName, fileName, params))
-	msg, err := exec.Command("/bin/bash", "-c", fmt.Sprintf(CompileCommand, programName, fileName, params)).CombinedOutput()
+	err = exec.Command("/bin/bash", "-c", fmt.Sprintf(CompileCommand, programName, fileName, params)).Run()
 	if err != nil {
-		fmt.Println(string(msg))
 		return err
 	}
 
@@ -45,6 +45,7 @@ func Load(pod *v1.Pod, programName, params string) error {
 		return err
 	}
 
+	// Attach to cgroup of processes
 	for _, e := range pod.Status.ContainerStatuses {
 		cgroup, err := util.GetCgroup(e)
 		if err != nil {
@@ -55,7 +56,7 @@ func Load(pod *v1.Pod, programName, params string) error {
 			return errors.New("Empty cgroup for container: " + pod.Namespace + "/" + pod.Name + "/" + e.Name)
 		}
 
-		if err := exec.Command("/bin/bash", "-c", "sudo bpftool cgroup attach "+cgroup+"/ egress pinned /sys/fs/bpf/"+fileName+"/cgroup_skb_egress").Run(); err != nil {
+		if err := exec.Command("/bin/bash", "-c", fmt.Sprintf(AttachCommand, cgroup, ioInterface, fileName)).Run(); err != nil {
 			return errors.New("Couldn't attach ebpf program to: " + pod.Namespace + "/" + pod.Name + "/" + e.Name + ", error: " + err.Error())
 		}
 	}
@@ -63,9 +64,20 @@ func Load(pod *v1.Pod, programName, params string) error {
 	return nil
 }
 
-func Unload(pod *v1.Pod, programName string) error {
+func Unload(pod *v1.Pod, programName, ioInterface string) {
 	fileName := programName + "_" + string(pod.UID)
 
+	// Detach from cgroup of processes
+	for _, e := range pod.Status.ContainerStatuses {
+		cgroup, err := util.GetCgroup(e)
+		if err == nil && len(cgroup) > 0 {
+			_ = exec.Command("/bin/bash", "-c", fmt.Sprintf(DetachCommand, cgroup, ioInterface, fileName)).Run()
+		}
+	}
+
 	// Unload ebpf program
-	return exec.Command("/bin/bash", "-c", fmt.Sprintf(UnloadCommand, fileName)).Run()
+	_ = exec.Command("/bin/bash", "-c", fmt.Sprintf(UnloadCommand, fileName, ioInterface)).Run()
+
+	// Delete program
+	_ = exec.Command("/bin/bash", "-c", fmt.Sprintf(DeleteCommand, fileName)).Run()
 }
