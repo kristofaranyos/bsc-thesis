@@ -19,17 +19,8 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1d7d1aba-8046-4718-b4b8-13a3658d786e" name="Default Changelist" comment="Restructured project">
-      <change afterPath="$PROJECT_DIR$/bpf/edt.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/loader/loader.go" afterDir="false" />
+    <list default="true" id="1d7d1aba-8046-4718-b4b8-13a3658d786e" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bpf/bandwidth.c" beforeDir="false" afterPath="$PROJECT_DIR$/bpf/bandwidth.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bpf/loss.c" beforeDir="false" afterPath="$PROJECT_DIR$/bpf/loss.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/loader.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/manager/bandwidth.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/podmanager.go" beforeDir="false" afterPath="$PROJECT_DIR$/podmanager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../k3s/config.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../k3s/config.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,10 +61,11 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/loader" />
       <recent name="$PROJECT_DIR$/manager" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Go Build.go build tiedpenguin.com/podmgr">
     <configuration name="go build tiedpenguin.com/gotest" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="ebpf_loader" />
       <working_directory value="$PROJECT_DIR$" />
@@ -83,8 +75,18 @@
       <directory value="$PROJECT_DIR$" />
       <method v="2" />
     </configuration>
+    <configuration name="go build tiedpenguin.com/podmgr" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="ebpf_loader" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <filePath value="$PROJECT_DIR$/main.go" />
+      <package value="tiedpenguin.com/podmgr" />
+      <directory value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Build.go build tiedpenguin.com/podmgr" />
         <item itemvalue="Go Build.go build tiedpenguin.com/gotest" />
       </list>
     </recent_temporary>
@@ -108,7 +110,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Added service discovery example code" />
     <MESSAGE value="Restructured project" />
-    <option name="LAST_COMMIT_MESSAGE" value="Restructured project" />
+    <MESSAGE value="Yet another save" />
+    <option name="LAST_COMMIT_MESSAGE" value="Yet another save" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>

@@ -241,12 +241,12 @@ func (pm *PodManager) addPod(entry *podEntry, override bool) error {
 			params += "000000"
 		}
 
-		err := loader.Load(&entry.pod, "edt", paramList[2], params)
+		err := loader.Load(&entry.pod, Bandwidth, paramList[2], params)
 		if err != nil {
 			return err
 		}
 
-		entry.programs["edt"] = paramList[2]
+		entry.programs[Bandwidth] = paramList[2]
 	}
 
 	if lossAnnotation, hasLoss := entry.limits[Loss]; hasLoss {
