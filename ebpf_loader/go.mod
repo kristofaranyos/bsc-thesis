@@ -1,4 +1,4 @@
-module tiedpenguin.com/gotest
+module tiedpenguin.com/podmgr
 
 go 1.13
 

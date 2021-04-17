@@ -16,8 +16,8 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"tiedpenguin.com/gotest/loader"
-	"tiedpenguin.com/gotest/util"
+	"tiedpenguin.com/podmgr/loader"
+	"tiedpenguin.com/podmgr/util"
 	"time"
 )
 

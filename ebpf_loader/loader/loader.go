@@ -6,7 +6,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"os/exec"
 	"strings"
-	"tiedpenguin.com/gotest/util"
+	"tiedpenguin.com/podmgr/util"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
-	"tiedpenguin.com/gotest/util"
+	"tiedpenguin.com/podmgr/util"
 )
 
 func main() {

@@ -15,7 +15,7 @@
 SEC("cgroup_skb/egress")
 int pkt_tbf(struct __sk_buff *skb)
 {
-	unsigned rnd = bpf_get_prandom_u32() % 100;
+	__u32 rnd = bpf_get_prandom_u32() % 100;
 	bpf_printk("Random number: %d\n", rnd);
 
     if (DISTRIBUTION == 0) {
