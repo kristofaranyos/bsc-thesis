@@ -2,15 +2,12 @@
 \label{ch:intro}
 
 \section{Motivation}
-I'm using Kubernetes\cite{kubernetes} daily at work. It's an excellent orchestration engine combined with an ecosystem that is both mature and diverse, but there are certain areas that still require further development. But what is Kubernetes?
-
 Most services available on the world wide web today are running on some kind of autonomously scalable container orchestration system. One of the most widely used engines is Kubernetes, opted for by several industry leaders.
 
-Kubernetes itself doesn't include networking, offloading this task to CNIs (Container Network Infrastructure). There are several of these freely available (such as Calico, Cilium, Flannel, WeaweNet, etc) but the feature set of these is wildly varying and their configuration is inconsistent. One of their deficiencies is that they don't support introducing bottlenecks in the network in order to test the quality of the services in, for example, a low-bandwidth or high-congestion networking environment.
-
+Kubernetes itself does not include networking, offloading this task to CNIs (Container Network Infrastructure). There are several of these freely available (such as Calico~\cite{calico}, Cilium~\cite{cilium}, Flannel~\cite{flannel}, Weawe Net~\cite{weavenet}, etc) but the feature set of these is wildly varying and their configuration is inconsistent. One of their deficiencies is that they do not support introducing bottlenecks in the network in order to test the quality of the services in, for example, a low-bandwidth or high-congestion networking environment.
 
 \section{Results}
-The goal of the thesis is to develop an application capable of simulating these conditions on Pod or Service level. The application is connected to the Kubernetes API, listening to Pod create, update and delete events. The Pods' containers get attached an EBPF program according to their metadata. These EBPF programs then run in kernel space and allow or drop packets to limit bandwidth and simulate network congestion.
+The goal of the thesis is to develop an application capable of simulating these conditions on Pod or Service level. The application is connected to the Kubernetes API, listening to Pod create, update and delete events. The Pods' containers get attached an eBPF program according to their metadata. These eBPF programs then run in kernel space and allow or drop packets to limit bandwidth and simulate network congestion.
 
 To prove the effectiveness and correctness of the application, it will be benchmarked on various different systems and with multiple tools.
 
@@ -21,7 +18,7 @@ The thesis will consist of three main parts; User Guide, Developer Documentation
 The User Guide will describe the general ideas behind the application as well as the system requirements, the installation guide, how to configure the limits for the system, and how to run the application.
 \bigbreak
 
-The Developer Documentation will contain a detailed description of the Kubernetes ecosystem, the Linux and EBPF ecosystem, and the details of the application's inner working. This latter will include a description of the implemented filters as well.
+The Developer Documentation will contain a detailed description of the Kubernetes ecosystem, the Linux and eBPF ecosystem, and the details of the application's inner working. This latter will include a description of the implemented filters as well.
 \bigbreak
 
-The Benchmarks chapter will include findings on the performance of the application.
+Lastly, the Benchmarks chapter will include detailed measurements of the application's performance and it's network managers' effectiveness. Both the bandwidth and loss manager is measured and the measurements are compared to the target values.
