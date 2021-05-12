@@ -22,26 +22,22 @@ func Load(pod *v1.Pod, programName, ioInterface, params string) error {
 	fileName := programName + "_" + string(pod.UID)
 
 	// Unload remnant if any
-	unloadOutput, err := exec.Command("/bin/bash", "-c", fmt.Sprintf(UnloadCommand, fileName, ioInterface)).CombinedOutput()
-	if err != nil && !strings.Contains(string(unloadOutput), "No such file or directory") {
+	if unloadOutput, err := UnloadProgram(fileName, ioInterface); err != nil && !strings.Contains(string(unloadOutput), "No such file or directory") {
 		return err
 	}
 
 	// Remove remnant if any
-	cleanOutput, err := exec.Command("/bin/bash", "-c", fmt.Sprintf(DeleteCommand, fileName)).CombinedOutput()
-	if err != nil && !strings.Contains(string(cleanOutput), "No such file or directory") {
+	if cleanOutput, err := DeleteFile(fileName); err != nil && !strings.Contains(cleanOutput, "No such file or directory") {
 		return err
 	}
 
 	// Compile ebpf program
-	err = exec.Command("/bin/bash", "-c", fmt.Sprintf(CompileCommand, programName, fileName, params)).Run()
-	if err != nil {
+	if err := CompileProgram(programName, fileName, params); err != nil {
 		return err
 	}
 
 	// Load ebpf program
-	err = exec.Command("/bin/bash", "-c", fmt.Sprintf(LoadCommand, fileName)).Run()
-	if err != nil {
+	if err := LoadProgram(fileName); err != nil {
 		return err
 	}
 
@@ -56,6 +52,7 @@ func Load(pod *v1.Pod, programName, ioInterface, params string) error {
 			return errors.New("Empty cgroup for container: " + pod.Namespace + "/" + pod.Name + "/" + e.Name)
 		}
 
+		fmt.Println(fmt.Sprintf(AttachCommand, cgroup, ioInterface, fileName))
 		if err := exec.Command("/bin/bash", "-c", fmt.Sprintf(AttachCommand, cgroup, ioInterface, fileName)).Run(); err != nil {
 			return errors.New("Couldn't attach ebpf program to: " + pod.Namespace + "/" + pod.Name + "/" + e.Name + ", error: " + err.Error())
 		}
@@ -76,8 +73,28 @@ func Unload(pod *v1.Pod, programName, ioInterface string) {
 	}
 
 	// Unload ebpf program
-	_ = exec.Command("/bin/bash", "-c", fmt.Sprintf(UnloadCommand, fileName, ioInterface)).Run()
+	_, _ = UnloadProgram(fileName, ioInterface)
 
 	// Delete program
-	_ = exec.Command("/bin/bash", "-c", fmt.Sprintf(DeleteCommand, fileName)).Run()
+	_, _ = DeleteFile(fileName)
+}
+
+func CompileProgram(programName, fileName, params string) error {
+	fmt.Println(fmt.Sprintf(CompileCommand, programName, fileName, params))
+	return exec.Command("/bin/bash", "-c", fmt.Sprintf(CompileCommand, programName, fileName, params)).Run()
+}
+
+func LoadProgram(fileName string) error {
+	fmt.Println(fmt.Sprintf(LoadCommand, fileName))
+	return exec.Command("/bin/bash", "-c", fmt.Sprintf(LoadCommand, fileName)).Run()
+}
+
+func UnloadProgram(fileName, ioInterface string) (string, error) {
+	out, err := exec.Command("/bin/bash", "-c", fmt.Sprintf(UnloadCommand, fileName, ioInterface)).CombinedOutput()
+	return string(out), err
+}
+
+func DeleteFile(fileName string) (string, error) {
+	out, err := exec.Command("/bin/bash", "-c", fmt.Sprintf(DeleteCommand, fileName)).CombinedOutput()
+	return string(out), err
 }

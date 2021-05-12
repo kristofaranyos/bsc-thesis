@@ -35,5 +35,3 @@ func main() {
 		util.Die(err)
 	}
 }
-
-//todo config change utan nem attacholja ujra
