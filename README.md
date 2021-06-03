@@ -22,9 +22,3 @@ Install with
 
 # Usage
 `$ cd ebpf_loader && go build -o podmgr . && ./podmgr`
-
-# Todos
-- Add ingress option (currently only egresses are supported)
-- Add optino to load custom ebpf programs
-- Add option to specify which container to include/exclude
-- Add more rate limiting ebpf programs
